@@ -1,4 +1,5 @@
 import type { Fill, SceneNode, Stroke } from "../scene/types";
+import { applyEffectsToContext } from "./effects";
 
 function applyFill(ctx: CanvasRenderingContext2D, fill: Fill, width: number, height: number): void {
   ctx.globalAlpha = fill.opacity;
@@ -69,6 +70,8 @@ export function drawNode(ctx: CanvasRenderingContext2D, node: SceneNode): void {
     ctx.fillText(node.text.content, anchorX, 0, node.width);
     return;
   }
+
+  if (node.effects?.length) applyEffectsToContext(ctx, node.effects);
 
   pathForNode(ctx, node);
   for (const fill of node.fills) {

@@ -26,6 +26,21 @@ export interface GradientFill {
 
 export type Fill = SolidFill | GradientFill;
 
+export interface ShadowEffect {
+  type: "drop-shadow" | "inner-shadow";
+  color: string;
+  offsetX: number;
+  offsetY: number;
+  blur: number;
+}
+
+export interface BlurEffect {
+  type: "layer-blur" | "background-blur";
+  radius: number;
+}
+
+export type Effect = ShadowEffect | BlurEffect;
+
 export interface Stroke {
   color: string;
   width: number;
@@ -61,6 +76,7 @@ export interface SceneNode {
   polygonSides?: number; // polygon, default 3
   clipsContent?: boolean; // frame
   text?: TextProps; // text
+  effects?: Effect[];
 }
 
 export interface SceneGraph {
