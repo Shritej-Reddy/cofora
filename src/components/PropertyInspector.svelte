@@ -2,6 +2,9 @@
   import type { EditorStore } from "../lib/store/editorStore";
   import { updateNode } from "../lib/scene/sceneGraph";
   import type { SceneGraph, Fill, Stroke, Effect } from "../lib/scene/types";
+  import { exportNodeAsPng, exportNodeAsJpg } from "../lib/export/exportImage";
+  import { nodeToSvgString } from "../lib/export/exportSvg";
+  import { promptSaveExport } from "../lib/persistence/projectClient";
 
   export let store: EditorStore;
 
@@ -64,6 +67,16 @@
     if (!node) return;
     store.mutate((g) => updateNode(g, node!.id, { effects: (node!.effects ?? []).filter((_, i) => i !== index) }));
   }
+
+  async function exportAs(format: "png" | "jpg" | "svg", scale: 1 | 2 | 3 = 1) {
+    if (!node || !graph) return;
+    if (format === "svg") {
+      await promptSaveExport(nodeToSvgString(graph, node.id), `${node.name}.svg`);
+      return;
+    }
+    const blob = format === "png" ? await exportNodeAsPng(graph, node.id, scale) : await exportNodeAsJpg(graph, node.id, scale);
+    await promptSaveExport(blob, `${node.name}@${scale}x.${format}`);
+  }
 </script>
 
 {#if node}
@@ -118,6 +131,16 @@
         </div>
       {/each}
       <button on:click={addShadow}>+ Drop Shadow</button>
+    </div>
+
+    <div style="grid-column: span 2; margin-top: 8px;">
+      <strong>Export</strong>
+      <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+        <button on:click={() => exportAs("png", 1)}>PNG 1x</button>
+        <button on:click={() => exportAs("png", 2)}>PNG 2x</button>
+        <button on:click={() => exportAs("jpg", 1)}>JPG</button>
+        <button on:click={() => exportAs("svg")}>SVG</button>
+      </div>
     </div>
   </div>
 {:else}
