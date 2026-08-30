@@ -5,6 +5,9 @@
   import { defaultCamera, cameraToCanvasTransform, screenToWorld, type Camera } from "../lib/render/camera";
   import { hitTestPoint } from "../lib/scene/hitTest";
   import { marqueeSelect } from "../lib/tools/selectTool";
+  import { toolManager, type ToolId } from "../lib/tools/toolManager";
+  import { createShapeNode } from "../lib/tools/shapeTools";
+  import { addNode } from "../lib/scene/sceneGraph";
 
   export let store: EditorStore;
 
@@ -14,6 +17,13 @@
 
   let dragStart: { x: number; y: number } | null = null;
   let marqueeRect: { x: number; y: number; width: number; height: number } | null = null;
+
+  let activeTool: ToolId = "select";
+  toolManager.subscribe((t) => (activeTool = t));
+
+  let shapeDragStart: { x: number; y: number } | null = null;
+
+  const SHAPE_KINDS: ToolId[] = ["rectangle", "ellipse", "line", "polygon"];
 
   // The canvas backing store is scaled up by devicePixelRatio relative to
   // its CSS size (see resizeCanvas below). cameraToCanvasTransform bakes
@@ -30,6 +40,11 @@
 
   function handlePointerDown(e: PointerEvent) {
     const world = screenToWorld(camera, e.offsetX, e.offsetY);
+    if (SHAPE_KINDS.includes(activeTool)) {
+      shapeDragStart = world;
+      return;
+    }
+    // existing select-tool logic from Task 10 continues to handle "select"
     const hitId = hitTestPoint(store.getGraph(), world.x, world.y);
     if (hitId) {
       store.select([hitId]);
@@ -52,7 +67,22 @@
     draw();
   }
 
-  function handlePointerUp() {
+  function handlePointerUp(e: PointerEvent) {
+    if (shapeDragStart && SHAPE_KINDS.includes(activeTool)) {
+      const world = screenToWorld(camera, e.offsetX, e.offsetY);
+      const x = Math.min(shapeDragStart.x, world.x);
+      const y = Math.min(shapeDragStart.y, world.y);
+      const width = Math.max(1, Math.abs(world.x - shapeDragStart.x));
+      const height = Math.max(1, Math.abs(world.y - shapeDragStart.y));
+      const rootId = store.getGraph().rootId;
+      const node = createShapeNode(activeTool as "rectangle" | "ellipse" | "line" | "polygon", rootId, x, y, width, height);
+      store.mutate((g) => addNode(g, node, rootId));
+      store.select([node.id]);
+      toolManager.setTool("select");
+      shapeDragStart = null;
+      return;
+    }
+    // existing marquee-finalize logic from Task 10 continues to run here
     if (marqueeRect) {
       store.select(marqueeSelect(store.getGraph(), marqueeRect));
     }
