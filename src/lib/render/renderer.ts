@@ -1,5 +1,5 @@
 import type { SceneGraph } from "../scene/types";
-import { worldMatrix } from "../scene/matrix";
+import { identity, multiply, worldMatrix, type Matrix } from "../scene/matrix";
 import { drawNode } from "./drawNode";
 
 const SELECTION_COLOR = "#4f8cff";
@@ -7,7 +7,8 @@ const SELECTION_COLOR = "#4f8cff";
 export function renderScene(
   ctx: CanvasRenderingContext2D,
   graph: SceneGraph,
-  selectedIds: string[]
+  selectedIds: string[],
+  baseMatrix: Matrix = identity()
 ): void {
   ctx.save();
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -16,7 +17,7 @@ export function renderScene(
     const node = graph.nodes[nodeId];
     if (!node.visible) return;
 
-    const [a, b, c, d, e, f] = worldMatrix(nodeId, graph);
+    const [a, b, c, d, e, f] = multiply(baseMatrix, worldMatrix(nodeId, graph));
     ctx.save();
     ctx.setTransform(a, b, c, d, e, f);
 
