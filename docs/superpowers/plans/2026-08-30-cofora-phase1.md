@@ -705,7 +705,9 @@ function paintOrder(graph: SceneGraph): SceneNode[] {
   const order: SceneNode[] = [];
   function walk(nodeId: string) {
     const node = graph.nodes[nodeId];
-    for (const childId of node.childIds) walk(childId);
+    // Reverse childIds: the last child in render order is drawn on top,
+    // so it must be tested first among siblings.
+    for (const childId of [...node.childIds].reverse()) walk(childId);
     if (node.id !== graph.rootId) order.push(node);
   }
   walk(graph.rootId);
@@ -713,9 +715,9 @@ function paintOrder(graph: SceneGraph): SceneNode[] {
 }
 
 export function hitTestPoint(graph: SceneGraph, worldX: number, worldY: number): string | null {
-  // paintOrder() returns deepest-drawn-last-first (children before the
-  // frame that contains them, reversed at each level) so the first match
-  // here is the topmost node under the point.
+  // paintOrder() returns topmost-first: each node's children (reversed,
+  // so the last-drawn/topmost sibling comes first) are tested before the
+  // node itself, since children render on top of their parent.
   for (const node of paintOrder(graph)) {
     if (!node.visible || node.locked) continue;
     if (pointInNode(graph, node, worldX, worldY)) return node.id;
@@ -2461,7 +2463,7 @@ export interface BlurEffect {
 export type Effect = ShadowEffect | BlurEffect;
 ```
 
-Add `effects: Effect[];` to the `SceneNode` interface.
+Add `effects?: Effect[];` to the `SceneNode` interface — optional, like `cornerRadius`/`polygonSides`/`clipsContent`/`text`, since every node-construction site from Tasks 3/11/12/13/22 predates this field and does not set it (and `drawNode.ts` already reads it via `node.effects?.length`).
 
 - [ ] **Step 2: Write the failing test for applyEffectsToContext**
 
@@ -2731,6 +2733,10 @@ git commit -m "Add fill/stroke/effects editing"
   };
 
   function handleKeydown(e: KeyboardEvent) {
+    const target = e.target as HTMLElement;
+    if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) {
+      return; // let text editing (Task 13 overlay, Task 14 rename input, inspector fields) handle its own keys
+    }
     const mod = e.metaKey || e.ctrlKey;
     if (mod && e.key.toLowerCase() === "z" && e.shiftKey) {
       e.preventDefault();
