@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { invoke } from "@tauri-apps/api/core";
   import CanvasView from "./CanvasView.svelte";
   import LayersPanel from "./LayersPanel.svelte";
   import PropertyInspector from "./PropertyInspector.svelte";
@@ -7,8 +8,39 @@
   import { createEditorStore } from "../lib/store/editorStore";
   import { toolManager, type ToolId } from "../lib/tools/toolManager";
   import { removeNode } from "../lib/scene/sceneGraph";
+  import {
+    saveProject, openProject, promptForNewProjectPath, promptForExistingProjectPath,
+  } from "../lib/persistence/projectClient";
 
   const store = createEditorStore("Page 1");
+
+  let projectPath: string | null = null;
+  let autosaveTimer: ReturnType<typeof setTimeout> | null = null;
+
+  async function handleNewProject() {
+    const path = await promptForNewProjectPath();
+    if (!path) return;
+    projectPath = path;
+    await invoke("create_project", { path, projectName: path.split("/").pop() ?? "Untitled" });
+    await saveProject(path, store);
+  }
+
+  async function handleOpenProject() {
+    const path = await promptForExistingProjectPath();
+    if (!path) return;
+    const pages = await openProject(path);
+    if (pages.length > 0) {
+      store.mutate(() => pages[0].graph);
+      store.select([]);
+    }
+    projectPath = path;
+  }
+
+  function scheduleAutosave() {
+    if (!projectPath) return;
+    if (autosaveTimer) clearTimeout(autosaveTimer);
+    autosaveTimer = setTimeout(() => saveProject(projectPath!, store), 2000);
+  }
 
   const KEY_TO_TOOL: Record<string, ToolId> = {
     v: "select", r: "rectangle", o: "ellipse", l: "line", p: "polygon", f: "frame", t: "text",
@@ -43,13 +75,20 @@
   }
 
   onMount(() => {
+    const unsubscribe = store.subscribe(() => scheduleAutosave());
+    const handleBlur = () => { if (projectPath) saveProject(projectPath, store); };
+    window.addEventListener("blur", handleBlur);
     window.addEventListener("keydown", handleKeydown);
-    return () => window.removeEventListener("keydown", handleKeydown);
+    return () => {
+      unsubscribe();
+      window.removeEventListener("blur", handleBlur);
+      window.removeEventListener("keydown", handleKeydown);
+    };
   });
 </script>
 
 <main style="display: flex; flex-direction: column; height: 100vh;">
-  <Toolbar {store} />
+  <Toolbar {store} onNew={handleNewProject} onOpen={handleOpenProject} />
   <div style="display: flex; flex: 1; min-height: 0;">
     <aside style="width: 240px; border-right: 1px solid #ddd; overflow-y: auto;">
       <LayersPanel {store} />

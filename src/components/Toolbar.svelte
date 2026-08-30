@@ -3,6 +3,8 @@
   import { toolManager, type ToolId } from "../lib/tools/toolManager";
 
   export let store: EditorStore;
+  export let onNew: () => void;
+  export let onOpen: () => void;
 
   let activeTool: ToolId = "select";
   toolManager.subscribe((t) => (activeTool = t));
@@ -19,6 +21,8 @@
 </script>
 
 <div style="display: flex; gap: 4px; padding: 4px; border-bottom: 1px solid #ddd;">
+  <button on:click={onNew}>New</button>
+  <button on:click={onOpen}>Open</button>
   {#each tools as tool}
     <button
       on:click={() => toolManager.setTool(tool.id)}
