@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createShapeNode } from "./shapeTools";
+import { createShapeNode, createFrameNode } from "./shapeTools";
 
 describe("createShapeNode", () => {
   it("creates a rectangle with the given parent-relative geometry", () => {
@@ -22,5 +22,14 @@ describe("createShapeNode", () => {
     const a = createShapeNode("ellipse", "parent1", 0, 0, 10, 10);
     const b = createShapeNode("ellipse", "parent1", 0, 0, 10, 10);
     expect(a.id).not.toBe(b.id);
+  });
+});
+
+describe("createFrameNode", () => {
+  it("creates a frame that clips its content and has no fill", () => {
+    const node = createFrameNode("root", 0, 0, 375, 812);
+    expect(node.kind).toBe("frame");
+    expect(node.clipsContent).toBe(true);
+    expect(node.fills).toEqual([]);
   });
 });

@@ -6,7 +6,7 @@
   import { hitTestPoint } from "../lib/scene/hitTest";
   import { marqueeSelect } from "../lib/tools/selectTool";
   import { toolManager, type ToolId } from "../lib/tools/toolManager";
-  import { createShapeNode } from "../lib/tools/shapeTools";
+  import { createShapeNode, createFrameNode } from "../lib/tools/shapeTools";
   import { addNode } from "../lib/scene/sceneGraph";
 
   export let store: EditorStore;
@@ -23,7 +23,7 @@
 
   let shapeDragStart: { x: number; y: number } | null = null;
 
-  const SHAPE_KINDS: ToolId[] = ["rectangle", "ellipse", "line", "polygon"];
+  const DRAGGABLE_TOOLS: ToolId[] = ["rectangle", "ellipse", "line", "polygon", "frame"];
 
   // The canvas backing store is scaled up by devicePixelRatio relative to
   // its CSS size (see resizeCanvas below). cameraToCanvasTransform bakes
@@ -40,7 +40,7 @@
 
   function handlePointerDown(e: PointerEvent) {
     const world = screenToWorld(camera, e.offsetX, e.offsetY);
-    if (SHAPE_KINDS.includes(activeTool)) {
+    if (DRAGGABLE_TOOLS.includes(activeTool)) {
       shapeDragStart = world;
       return;
     }
@@ -68,14 +68,17 @@
   }
 
   function handlePointerUp(e: PointerEvent) {
-    if (shapeDragStart && SHAPE_KINDS.includes(activeTool)) {
+    if (shapeDragStart && DRAGGABLE_TOOLS.includes(activeTool)) {
       const world = screenToWorld(camera, e.offsetX, e.offsetY);
       const x = Math.min(shapeDragStart.x, world.x);
       const y = Math.min(shapeDragStart.y, world.y);
       const width = Math.max(1, Math.abs(world.x - shapeDragStart.x));
       const height = Math.max(1, Math.abs(world.y - shapeDragStart.y));
       const rootId = store.getGraph().rootId;
-      const node = createShapeNode(activeTool as "rectangle" | "ellipse" | "line" | "polygon", rootId, x, y, width, height);
+      const node =
+        activeTool === "frame"
+          ? createFrameNode(rootId, x, y, width, height)
+          : createShapeNode(activeTool as "rectangle" | "ellipse" | "line" | "polygon", rootId, x, y, width, height);
       store.mutate((g) => addNode(g, node, rootId));
       store.select([node.id]);
       toolManager.setTool("select");

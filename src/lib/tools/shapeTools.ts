@@ -24,3 +24,17 @@ export function createShapeNode(
   if (kind === "polygon") base.polygonSides = 3;
   return base;
 }
+
+export function createFrameNode(parentId: string, x: number, y: number, width: number, height: number): SceneNode {
+  return {
+    id: crypto.randomUUID(),
+    kind: "frame",
+    name: "Frame",
+    parentId,
+    childIds: [],
+    x, y, width, height, rotation: 0,
+    visible: true, locked: false,
+    fills: [], strokes: [],
+    clipsContent: true,
+  };
+}
