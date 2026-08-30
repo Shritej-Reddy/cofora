@@ -5,6 +5,12 @@
   import { exportNodeAsPng, exportNodeAsJpg } from "../lib/export/exportImage";
   import { nodeToSvgString } from "../lib/export/exportSvg";
   import { promptSaveExport } from "../lib/persistence/projectClient";
+  import {
+    alignLeft, alignCenterHorizontal, alignRight,
+    alignTop, alignMiddleVertical, alignBottom,
+    distributeHorizontal, distributeVertical,
+  } from "../lib/align/align";
+  import type { Bounds } from "../lib/align/align";
 
   export let store: EditorStore;
 
@@ -16,6 +22,26 @@
   });
 
   $: node = selection.length > 0 && graph ? graph.nodes[selection[0]] : null;
+
+  $: sameParentSelection =
+    selection.length > 1 && graph &&
+    selection.every((id) => graph.nodes[id].parentId === graph.nodes[selection[0]].parentId);
+
+  function selectionBounds(): Bounds[] {
+    return selection.map((id) => {
+      const n = graph.nodes[id];
+      return { id: n.id, x: n.x, y: n.y, width: n.width, height: n.height };
+    });
+  }
+
+  function applyAlign(fn: (items: Bounds[]) => Map<string, { x: number } | { y: number }>) {
+    const updates = fn(selectionBounds());
+    store.mutate((g) => {
+      let next = g;
+      for (const [id, patch] of updates) next = updateNode(next, id, patch);
+      return next;
+    });
+  }
 
   function setField(field: "x" | "y" | "width" | "height" | "rotation", value: number) {
     if (!node) return;
@@ -142,6 +168,22 @@
         <button on:click={() => exportAs("svg")}>SVG</button>
       </div>
     </div>
+
+    {#if sameParentSelection}
+      <div style="grid-column: span 2; margin-top: 8px;">
+        <strong>Align / Distribute</strong>
+        <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+          <button on:click={() => applyAlign(alignLeft)}>Left</button>
+          <button on:click={() => applyAlign(alignCenterHorizontal)}>Center H</button>
+          <button on:click={() => applyAlign(alignRight)}>Right</button>
+          <button on:click={() => applyAlign(alignTop)}>Top</button>
+          <button on:click={() => applyAlign(alignMiddleVertical)}>Middle V</button>
+          <button on:click={() => applyAlign(alignBottom)}>Bottom</button>
+          <button on:click={() => applyAlign(distributeHorizontal)}>Distribute H</button>
+          <button on:click={() => applyAlign(distributeVertical)}>Distribute V</button>
+        </div>
+      </div>
+    {/if}
   </div>
 {:else}
   <p style="padding: 8px; color: #888;">No selection</p>
