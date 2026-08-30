@@ -12,6 +12,17 @@ export function screenToWorld(camera: Camera, screenX: number, screenY: number):
   return { x: camera.x + screenX / camera.zoom, y: camera.y + screenY / camera.zoom };
 }
 
-export function cameraToCanvasTransform(camera: Camera): [number, number, number, number, number, number] {
-  return [camera.zoom, 0, 0, camera.zoom, -camera.x * camera.zoom, -camera.y * camera.zoom];
+// `pixelRatio` accounts for the canvas backing store being scaled up by
+// devicePixelRatio relative to its CSS size (see CanvasView.svelte's
+// resizeCanvas). The returned matrix maps world space directly to the
+// canvas's raw drawing/backing-store pixel space, so world units keep a
+// 1:1 correspondence with CSS pixels at zoom=1 regardless of DPR — which
+// is what makes `screenToWorld` (which takes CSS-pixel screen coords)
+// consistent with what's actually rendered on screen.
+export function cameraToCanvasTransform(
+  camera: Camera,
+  pixelRatio = 1
+): [number, number, number, number, number, number] {
+  const scale = camera.zoom * pixelRatio;
+  return [scale, 0, 0, scale, -camera.x * scale, -camera.y * scale];
 }
