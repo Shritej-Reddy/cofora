@@ -1,6 +1,7 @@
 <script lang="ts">
   import CanvasView from "./CanvasView.svelte";
   import LayersPanel from "./LayersPanel.svelte";
+  import PropertyInspector from "./PropertyInspector.svelte";
   import { createEditorStore } from "../lib/store/editorStore";
 
   const store = createEditorStore("Page 1");
@@ -13,4 +14,7 @@
   <div style="flex: 1;">
     <CanvasView {store} />
   </div>
+  <aside style="width: 240px; border-left: 1px solid #ddd; overflow-y: auto;">
+    <PropertyInspector {store} />
+  </aside>
 </main>
