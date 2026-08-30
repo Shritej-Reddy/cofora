@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createShapeNode, createFrameNode } from "./shapeTools";
+import { createShapeNode, createFrameNode, createTextNode } from "./shapeTools";
 
 describe("createShapeNode", () => {
   it("creates a rectangle with the given parent-relative geometry", () => {
@@ -31,5 +31,16 @@ describe("createFrameNode", () => {
     expect(node.kind).toBe("frame");
     expect(node.clipsContent).toBe(true);
     expect(node.fills).toEqual([]);
+  });
+});
+
+describe("createTextNode", () => {
+  it("creates a text node with default typography and empty content", () => {
+    const node = createTextNode("root", 10, 10);
+    expect(node.kind).toBe("text");
+    expect(node.text).toEqual({
+      content: "", fontFamily: "Inter, sans-serif", fontSize: 16,
+      fontWeight: 400, lineHeight: 1.4, align: "left",
+    });
   });
 });

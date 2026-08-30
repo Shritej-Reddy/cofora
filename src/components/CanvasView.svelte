@@ -6,8 +6,9 @@
   import { hitTestPoint } from "../lib/scene/hitTest";
   import { marqueeSelect } from "../lib/tools/selectTool";
   import { toolManager, type ToolId } from "../lib/tools/toolManager";
-  import { createShapeNode, createFrameNode } from "../lib/tools/shapeTools";
-  import { addNode } from "../lib/scene/sceneGraph";
+  import { createShapeNode, createFrameNode, createTextNode } from "../lib/tools/shapeTools";
+  import { addNode, updateNode, removeNode } from "../lib/scene/sceneGraph";
+  import TextEditOverlay from "./TextEditOverlay.svelte";
 
   export let store: EditorStore;
 
@@ -25,6 +26,31 @@
 
   const DRAGGABLE_TOOLS: ToolId[] = ["rectangle", "ellipse", "line", "polygon", "frame"];
 
+  let editingNode: import("../lib/scene/types").SceneNode | null = null;
+
+  function handleCanvasClickForText(worldX: number, worldY: number) {
+    const rootId = store.getGraph().rootId;
+    const node = createTextNode(rootId, worldX, worldY);
+    store.mutate((g) => addNode(g, node, rootId));
+    editingNode = node;
+  }
+
+  function commitText(content: string) {
+    if (editingNode) {
+      store.mutate((g) => updateNode(g, editingNode!.id, { text: { ...editingNode!.text!, content } }));
+    }
+    editingNode = null;
+    toolManager.setTool("select");
+  }
+
+  function cancelText() {
+    if (editingNode) {
+      store.mutate((g) => removeNode(g, editingNode!.id));
+    }
+    editingNode = null;
+    toolManager.setTool("select");
+  }
+
   // The canvas backing store is scaled up by devicePixelRatio relative to
   // its CSS size (see resizeCanvas below). cameraToCanvasTransform bakes
   // devicePixelRatio into the world->backing-store-pixel matrix so that
@@ -40,6 +66,10 @@
 
   function handlePointerDown(e: PointerEvent) {
     const world = screenToWorld(camera, e.offsetX, e.offsetY);
+    if (activeTool === "text") {
+      handleCanvasClickForText(world.x, world.y);
+      return;
+    }
     if (DRAGGABLE_TOOLS.includes(activeTool)) {
       shapeDragStart = world;
       return;
@@ -131,3 +161,6 @@
   on:pointerup={handlePointerUp}
   style="width: 100%; height: 100%; display: block;"
 />
+{#if editingNode}
+  <TextEditOverlay node={editingNode} {camera} on:commit={(e) => commitText(e.detail)} on:cancel={cancelText} />
+{/if}
