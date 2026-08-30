@@ -13,6 +13,14 @@ for all phases below, not deferred.
 
 ## 2. Platform & Stack
 
+- **Platform targets:** Windows and macOS, both from Phase 1 onward.
+  Tauri shares the Rust backend and Svelte/TypeScript frontend across
+  both; the webview is WebView2 on Windows and WKWebView on macOS.
+  Each OS still needs its own build/packaging pass — a signed/notarized
+  `.dmg`/`.app` for macOS and a signed installer (e.g. MSI/NSIS) for
+  Windows — and CI should build/test on both platforms rather than
+  one, since native dialogs (save location) and filesystem path
+  handling are OS-specific. Linux is not a target.
 - **Shell:** Tauri (Rust backend + native webview). Chosen over
   Electron for smaller binaries and lower idle memory; file I/O and
   SQLite access happen in the Rust side, invoked from the frontend via
