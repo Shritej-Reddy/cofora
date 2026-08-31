@@ -45,3 +45,8 @@ pub fn save_project(path: String, data: ProjectData) -> Result<(), String> {
     }
     Ok(())
 }
+
+#[tauri::command]
+pub fn write_export_file(path: String, contents: Vec<u8>) -> Result<(), String> {
+    std::fs::write(path, contents).map_err(|e| e.to_string())
+}

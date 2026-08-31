@@ -153,14 +153,16 @@
   });
 </script>
 
-<canvas
-  bind:this={canvasEl}
-  on:wheel={handleWheel}
-  on:pointerdown={handlePointerDown}
-  on:pointermove={handlePointerMove}
-  on:pointerup={handlePointerUp}
-  style="width: 100%; height: 100%; display: block;"
-/>
-{#if editingNode}
-  <TextEditOverlay node={editingNode} {camera} on:commit={(e) => commitText(e.detail)} on:cancel={cancelText} />
-{/if}
+<div style="position: relative; width: 100%; height: 100%;">
+  <canvas
+    bind:this={canvasEl}
+    on:wheel={handleWheel}
+    on:pointerdown={handlePointerDown}
+    on:pointermove={handlePointerMove}
+    on:pointerup={handlePointerUp}
+    style="width: 100%; height: 100%; display: block;"
+  />
+  {#if editingNode}
+    <TextEditOverlay node={editingNode} {camera} on:commit={(e) => commitText(e.detail)} on:cancel={cancelText} />
+  {/if}
+</div>

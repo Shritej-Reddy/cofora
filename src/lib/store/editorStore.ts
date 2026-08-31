@@ -39,11 +39,23 @@ export function createEditorStore(rootName: string): EditorStore {
     },
     undo() {
       const restored = history.undo(state.graph);
-      if (restored) store.update((s) => ({ ...s, graph: restored }));
+      if (restored) {
+        store.update((s) => ({
+          ...s,
+          graph: restored,
+          selection: s.selection.filter((id) => id in restored.nodes),
+        }));
+      }
     },
     redo() {
       const restored = history.redo(state.graph);
-      if (restored) store.update((s) => ({ ...s, graph: restored }));
+      if (restored) {
+        store.update((s) => ({
+          ...s,
+          graph: restored,
+          selection: s.selection.filter((id) => id in restored.nodes),
+        }));
+      }
     },
     canUndo: () => history.canUndo(),
     canRedo: () => history.canRedo(),

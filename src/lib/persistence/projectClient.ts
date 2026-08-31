@@ -1,6 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
 import { save, open } from "@tauri-apps/plugin-dialog";
-import { writeFile, writeTextFile } from "@tauri-apps/plugin-fs";
 import type { EditorStore } from "../store/editorStore";
 import type { SceneGraph } from "../scene/types";
 
@@ -42,9 +41,9 @@ export async function promptSaveExport(blobOrString: Blob | string, suggestedNam
   const extension = suggestedName.split(".").pop() ?? "png";
   const path = await save({ defaultPath: suggestedName, filters: [{ name: extension.toUpperCase(), extensions: [extension] }] });
   if (!path) return;
-  if (typeof blobOrString === "string") {
-    await writeTextFile(path, blobOrString);
-  } else {
-    await writeFile(path, new Uint8Array(await blobOrString.arrayBuffer()));
-  }
+  const bytes =
+    typeof blobOrString === "string"
+      ? new TextEncoder().encode(blobOrString)
+      : new Uint8Array(await blobOrString.arrayBuffer());
+  await invoke("write_export_file", { path, contents: Array.from(bytes) });
 }

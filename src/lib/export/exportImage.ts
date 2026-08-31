@@ -13,23 +13,15 @@ export function renderNodeToOffscreenCanvas(
   canvas.height = node.height * scale;
   const ctx = canvas.getContext("2d")!;
 
-  // Render the full scene into a temporary offscreen canvas at world scale,
-  // then crop to this node's world-space bounds. Simpler and more correct
-  // for rotated/nested nodes than re-deriving a standalone transform chain.
-  const full = document.createElement("canvas");
-  full.width = 8000;
-  full.height = 8000;
-  const fullCtx = full.getContext("2d")!;
-  fullCtx.setTransform(scale, 0, 0, scale, 0, 0);
-  renderScene(fullCtx, graph, []);
-
+  // Render directly into a canvas sized to this node's own bounds, using a
+  // base transform that scales by `scale` and translates the node's
+  // world-space origin to (0, 0). This avoids allocating an oversized
+  // scratch canvas and correctly handles nodes at any world position
+  // (including negative coordinates reachable after panning).
   const m = worldMatrix(nodeId, graph);
   const origin = applyToPoint(m, 0, 0);
-  ctx.drawImage(
-    full,
-    origin.x * scale, origin.y * scale, node.width * scale, node.height * scale,
-    0, 0, node.width * scale, node.height * scale
-  );
+  renderScene(ctx, graph, [], [scale, 0, 0, scale, -origin.x * scale, -origin.y * scale]);
+
   return canvas;
 }
 
