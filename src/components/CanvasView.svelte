@@ -65,6 +65,13 @@
   }
 
   function handlePointerDown(e: PointerEvent) {
+    // A text edit is in progress: its own blur/Escape handler owns committing
+    // or cancelling it. Ignore this canvas click rather than racing that
+    // commit — pointerdown on the canvas fires before the textarea's blur
+    // event, so without this guard a click meant to finish editing would
+    // instead be read as "place a new text node" while activeTool is still
+    // "text", creating a stray node and misdirecting the commit onto it.
+    if (editingNode) return;
     const world = screenToWorld(camera, e.offsetX, e.offsetY);
     if (activeTool === "text") {
       handleCanvasClickForText(world.x, world.y);
@@ -77,11 +84,16 @@
     // existing select-tool logic from Task 10 continues to handle "select"
     const hitId = hitTestPoint(store.getGraph(), world.x, world.y);
     if (hitId) {
-      store.select([hitId]);
+      if (e.shiftKey) {
+        const current = store.getSelection();
+        store.select(current.includes(hitId) ? current.filter((id) => id !== hitId) : [...current, hitId]);
+      } else {
+        store.select([hitId]);
+      }
       dragStart = null;
     } else {
       dragStart = world;
-      store.select([]);
+      if (!e.shiftKey) store.select([]);
     }
   }
 
