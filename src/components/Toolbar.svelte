@@ -5,6 +5,8 @@
   export let store: EditorStore;
   export let onNew: () => void;
   export let onOpen: () => void;
+  export let onGroup: () => void;
+  export let onUngroup: () => void;
 
   let activeTool: ToolId = "select";
   toolManager.subscribe((t) => (activeTool = t));
@@ -34,4 +36,6 @@
   <span style="flex: 1;" />
   <button on:click={() => store.undo()}>Undo</button>
   <button on:click={() => store.redo()}>Redo</button>
+  <button on:click={onGroup}>Group</button>
+  <button on:click={onUngroup}>Ungroup</button>
 </div>

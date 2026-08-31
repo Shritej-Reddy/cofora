@@ -8,6 +8,7 @@
   import { createEditorStore } from "../lib/store/editorStore";
   import { toolManager, type ToolId } from "../lib/tools/toolManager";
   import { removeNode } from "../lib/scene/sceneGraph";
+  import { groupNodes, ungroupNode } from "../lib/tools/grouping";
   import {
     saveProject, openProject, promptForNewProjectPath, promptForExistingProjectPath,
   } from "../lib/persistence/projectClient";
@@ -46,6 +47,29 @@
     v: "select", r: "rectangle", o: "ellipse", l: "line", p: "polygon", f: "frame", t: "text",
   };
 
+  function handleGroup() {
+    const selection = store.getSelection();
+    if (selection.length < 2) return;
+    const parentIds = new Set(selection.map((id) => store.getGraph().nodes[id].parentId));
+    if (parentIds.size > 1) return; // Task 21's same-parent constraint applies here too
+    let newGroupId = "";
+    store.mutate((g) => {
+      const { graph, groupId } = groupNodes(g, selection);
+      newGroupId = groupId;
+      return graph;
+    });
+    store.select([newGroupId]);
+  }
+
+  function handleUngroup() {
+    const selection = store.getSelection();
+    if (selection.length !== 1 || store.getGraph().nodes[selection[0]].kind !== "group") return;
+    const groupId = selection[0];
+    const childIds = store.getGraph().nodes[groupId].childIds;
+    store.mutate((g) => ungroupNode(g, groupId));
+    store.select(childIds);
+  }
+
   function handleKeydown(e: KeyboardEvent) {
     const target = e.target as HTMLElement;
     if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) {
@@ -60,6 +84,16 @@
     if (mod && e.key.toLowerCase() === "z") {
       e.preventDefault();
       store.undo();
+      return;
+    }
+    if (mod && e.key.toLowerCase() === "g" && e.shiftKey) {
+      e.preventDefault();
+      handleUngroup();
+      return;
+    }
+    if (mod && e.key.toLowerCase() === "g") {
+      e.preventDefault();
+      handleGroup();
       return;
     }
     if (e.key === "Delete" || e.key === "Backspace") {
@@ -88,7 +122,7 @@
 </script>
 
 <main style="display: flex; flex-direction: column; height: 100vh;">
-  <Toolbar {store} onNew={handleNewProject} onOpen={handleOpenProject} />
+  <Toolbar {store} onNew={handleNewProject} onOpen={handleOpenProject} onGroup={handleGroup} onUngroup={handleUngroup} />
   <div style="display: flex; flex: 1; min-height: 0;">
     <aside style="width: 240px; border-right: 1px solid #ddd; overflow-y: auto;">
       <LayersPanel {store} />
